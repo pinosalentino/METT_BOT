@@ -26,7 +26,7 @@ const Database = require('json-database-rf')
 const db = new Database()
 
 
-client.login('OTgzNzQ3ODExNDMyNjAzNjY4.GGbXeu.8KLVrhdcLCkUdugQHe1Tf1oxb32j4rEpoyerLE')
+client.login(process.env.token)
 
 client.on("messageCreate", (message)=>{
     console.log("Messagio dall'utente");
