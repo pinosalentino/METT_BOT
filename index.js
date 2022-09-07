@@ -4,36 +4,185 @@ const Discord = require("discord.js")
 const { Client, Collection, Intents } = require('discord.js');
 
 const client = new Client({
-    intents: [
-        Intents.FLAGS.GUILDS,
-        Intents.FLAGS.GUILD_MEMBERS,
-        Intents.FLAGS.GUILD_BANS,
-        Intents.FLAGS.GUILD_INTEGRATIONS,
-        Intents.FLAGS.GUILD_WEBHOOKS,
-        Intents.FLAGS.GUILD_INVITES,
-        Intents.FLAGS.GUILD_VOICE_STATES,
-        Intents.FLAGS.GUILD_PRESENCES,
-        Intents.FLAGS.GUILD_MESSAGES,
-        Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
-        Intents.FLAGS.GUILD_MESSAGE_TYPING,
-        Intents.FLAGS.DIRECT_MESSAGES,
-        Intents.FLAGS.DIRECT_MESSAGE_REACTIONS,
-        Intents.FLAGS.DIRECT_MESSAGE_TYPING,
-    ],
-}); 
+    intents: 32767
+});
 
 const Database = require('json-database-rf')
 const db = new Database()
 
 
-client.login(process.env.token)
+client.login("OTgzNzQ3ODExNDMyNjAzNjY4.GhuPGH.0llBb5XucOesycyMTRl2lu4RWBtGn-N08kRJa8")
 
 client.on("messageCreate", (message)=>{
     console.log("Messagio dall'utente");
 });
 
 client.on("messageCreate", message => {
+    if (message.content == "m!comando") {
+        const embed = new Discord.MessageEmbed()
+        .setTitle("apri un TICKET")
+        .setColor("#0000CD")
+        .setDescription("Hai bisogno di una mano con il Mett_Bot o altro? apri un ticket ora!")
+        .setFooter("💢N.B. se la motivazione dell'apertura del tu ticket non sarà coerente con il Mett_bot o il server del precedente verrai warnato")
+
+
+        let button1 = new Discord.MessageButton()
+            .setLabel("Apri ticket")
+            .setCustomId("apriTicket")
+            .setStyle("PRIMARY")
+            .setEmoji("📩")
+
+        let row = new Discord.MessageActionRow()
+            .addComponents(button1)
+
+        message.channel.send({ embeds: [embed], components: [row] })
+    }
+})
+
+client.on("interactionCreate", async interaction => {
+    if (interaction.customId == "apriTicket") {
+        const embed = new Discord.MessageEmbed()
+        .setTitle("❤️Grazie per aver aperto il ticket!")
+        .setColor("#0000CD")
+        .setDescription("uno staffer verrà presto da lei!")
+        .setFooter("N.B. se la motivazione dell'apertura del tu ticket non sarà coerente con il Mett_bot o il server del precedente verrai warnato")
+        const embed1 = new Discord.MessageEmbed()
+        .setTitle("Hai già un ticket aperto")
+        .setColor("#0000CD")
+        .setDescription("mi dispiace non puoi aprire un altro ticket")
+        .setTimestamp()
+        await interaction.deferUpdate()
+        if (interaction.guild.channels.cache.find(canale => canale.topic == `User ID: ${interaction.user.id}`)) {
+            interaction.user.send({ embeds: [embed1]}).catch(() => { })
+            return
+        }
+        interaction.guild.channels.create(interaction.user.username, {
+            type: "text",
+            topic: `User ID: ${interaction.user.id}`,
+            parent: "1003784624457130184", //Settare la categoria,
+            permissionOverwrites: [
+                {
+                    id: interaction.guild.id,
+                    deny: ["VIEW_CHANNEL"]
+                },
+                {
+                    id: interaction.user.id,
+                    allow: ["VIEW_CHANNEL"]
+                },
+                { //Aggiungere altri "blocchi" se si vogliono dare permessi anche a ruoli o utenti
+                    id: "1003759720684855397",
+                    allow: ["VIEW_CHANNEL"]
+                }
+            ]
+        }).then(canale => {
+            canale.send({ embeds: [embed]})
+            canale.send("<@&1003759720684855397>")
+        })
+    }
+})
+
+client.on("messageCreate", message => {
+    if (message.content == "m!close") {
+        let topic = message.channel.topic;
+        if (!topic) {
+            message.channel.send("Non puoi utilizzare questo comando qui");
+            return
+        }
+        if (topic.startsWith("User ID:")) {
+            let idUtente = topic.slice(9);
+            if (message.author.id == idUtente || message.member.permissions.has("MANAGE_CHANNELS")) {
+                message.channel.delete();
+            }
+        }
+        else {
+            message.channel.send("Non puoi utilizzare questo comando qui")
+        }
+    }
+    if (message.content.startsWith("m!add")) {
+        let topic = message.channel.topic;
+        if (!topic) {
+            message.channel.send("Non puoi utilizzare questo comando qui");
+            return
+        }
+        if (topic.startsWith("User ID:")) {
+            let idUtente = topic.slice(9);
+            if (message.author.id == idUtente || message.member.permissions.has("MANAGE_CHANNELS")) {
+                let utente = message.mentions.members.first();
+                if (!utente) {
+                    message.channel.send("Inserire un utente valido");
+                    return
+                }
+                let haIlPermesso = message.channel.permissionsFor(utente).has("VIEW_CHANNEL", true)
+                if (haIlPermesso) {
+                    message.channel.send("Questo utente ha gia accesso al ticket")
+                    return
+                }
+                message.channel.permissionOverwrites.edit(utente, {
+                    VIEW_CHANNEL: true
+                })
+                message.channel.send(`${utente.toString()} è stato aggiunto al ticket`)
+            }
+        }
+        else {
+            message.channel.send("Non puoi utilizzare questo comando qui")
+        }
+    }
+    if (message.content.startsWith("m!remove")) {
+        let topic = message.channel.topic;
+        if (!topic) {
+            message.channel.send("Non puoi utilizzare questo comando qui");
+            return
+        }
+        if (topic.startsWith("User ID:")) {
+            let idUtente = topic.slice(9);
+            if (message.author.id == idUtente || message.member.permissions.has("MANAGE_CHANNELS")) {
+                let utente = message.mentions.members.first();
+                if (!utente) {
+                    message.channel.send("Inserire un utente valido");
+                    return
+                }
+                let haIlPermesso = message.channel.permissionsFor(utente).has("VIEW_CHANNEL", true)
+                if (!haIlPermesso) {
+                    message.channel.send("Questo utente non ha gia accesso al ticket")
+                    return
+                }
+                if (utente.permissions.has("MANAGE_CHANNELS")) {
+                    message.channel.send("Non puoi rimuovere questo utente")
+                    return
+                }
+                message.channel.permissionOverwrites.edit(utente, {
+                    VIEW_CHANNEL: false
+                })
+                message.channel.send(`${utente.toString()} è stato rimosso al ticket`)
+            }
+        }
+        else {
+            message.channel.send("Non puoi utilizzare questo comando qui")
+        }
+    }
+})
+
+client.on("messageCreate", message => {
+    if (message.content == "m!tickethelp") {
+        const embed = new Discord.MessageEmbed()
+            .setTitle("HELP PER I TICKET") 
+            .setColor("#0000CD")
+            .setDescription("ecco tutti i comandi del Mett_Ticket")
+            .addField("❌m!close", `chiudi un ticket aperto`)
+            .addField("➕m!add", `aggiungi un utente al ticket`)
+            .addField("➖m!remove", `rimuovi un utente da un ticket`)
+            .addField("✨m!tickethelp", `visualizzi questo help`)
+
+        message.channel.send({ embeds: [embed]})
+    }
+})
+
+client.on("messageCreate", message => {
     if (message.content.startsWith("m!ban")) {
+if (message.author.bot) {
+    message.channel.send("non puoi bannare con say")
+    return
+}
         var BanUser = message.mentions.members.first();
         if (!message.member.permissions.has('BAN_MEMBERS')) {
             message.channel.send('Non hai il permesso per eseguire questa azione');
@@ -47,6 +196,7 @@ if (!BanUser) {
             message.channel.send('Non ho il permesso per eeguire questa azione');
             return
         }
+
         BanUser.ban()
             .then(() => message.channel.send("<@" + BanUser + ">" + " è stato bannato correttamente"))
     }
@@ -67,6 +217,7 @@ client.on("messageCreate", message => {
         if (count > 100) {
             return message.channel.send("Non puoi cancellare più di 100 messaggi")
         }
+        if (message.author.bot) return
         message.channel.bulkDelete(count, true)
         message.channel.send(count + " messaggi eliminati").then(msg => {
             setTimeout(() => msg.delete(), 5000)
@@ -76,6 +227,10 @@ client.on("messageCreate", message => {
 
 client.on("messageCreate", message => {
     if (message.content.startsWith("m!kick")) {
+if (message.author.bot) {
+        message.channel.send("non puoi usare say per kickare")
+        return
+}
         var utenteKick = message.mentions.members.first();
         if (!message.member.permissions.has('KICK_MEMBERS')) { //Controllare che l'utente abbia il permesso di bannare
             message.channel.send('Non hai il permesso');
@@ -89,8 +244,26 @@ client.on("messageCreate", message => {
             message.channel.send('Io non ho il permesso');
             return
         }
+        if (message.author.bot) return
         utenteKick.kick()
             .then(() => message.channel.send("<@" + utenteKick + ">" + " kiccato"))
+    }
+})
+
+
+client.on("messageCreate", message => {
+    if (message.content.startsWith("m!say")) {
+        var args = message.content.split(/\s+/);
+        var testo;
+        testo = args.slice(1).join(" ");
+        if (!testo) {
+            return message.channel.send("Inserire un messaggio");
+        }
+        if (message.content.includes("@everyone") || message.content.includes("@here")) {
+            return message.channel.send("Non taggare everyone o here");
+        }
+        message.delete()
+        message.channel.send(testo)
     }
 })
 
@@ -176,6 +349,10 @@ client.on("messageCreate", message => {
 
 client.on("messageCreate", message => {
     if (message.content.startsWith("m!mute")) {
+if (message.author.bot) {
+        message.channel.send("non puoi mutare con say")
+        return
+}
         var utente = message.mentions.members.first();
         if (!message.member.permissions.has("MANAGE_ROLES")) {
             return message.channel.send('Non hai il permesso');
@@ -183,6 +360,7 @@ client.on("messageCreate", message => {
         if (!utente) {
             return message.channel.send('Non hai menzionato nessun utente');
         }
+        if (message.author.bot) return
         
         let ruolo = message.guild.roles.cache.find(x => x.name === "Mute")
 
@@ -212,6 +390,10 @@ client.on("messageCreate", message => {
 
 client.on("messageCreate", message => {
     if (message.content.startsWith("m!unmute")) {
+if (message.author.bot) {
+    message.channel.send("non puoi mutare con say")
+        return
+}
         var utente = message.mentions.members.first();
         if (!message.member.permissions.has("MANAGE_ROLES")) {
             return message.channel.send('Non hai il permesso');
@@ -224,6 +406,7 @@ client.on("messageCreate", message => {
         if (!ruolo) {
             return message.channel.send("Il ruolo è inesistente");
         }
+        if (message.author.bot) return
         utente.roles.remove(ruolo);
 
         var embed = new Discord.MessageEmbed()
@@ -239,6 +422,10 @@ client.on("messageCreate", message => {
 
 client.on("messageCreate", async message => {
     if (message.content.startsWith("m!unban")) {
+if (message.author.bot) {
+    message.channel.send("non puoi sbannare con say")
+    return
+}
         if (!message.member.permissions.has('BAN_MEMBERS')) {
             return message.channel.send('Non hai il permesso');
         }
@@ -249,6 +436,7 @@ client.on("messageCreate", async message => {
         if (!idUtente) {
             return message.channel.send("Non hai scritto l'id di nessun utente");
         }
+        if (message.author.bot) return
 
         message.guild.members.unban(idUtente)
             .then(() => {
@@ -392,21 +580,6 @@ client.on("messageCreate", message => {
     }
 })
 
-client.on("messageCreate", message => {
-    if (message.content.startsWith("m!say")) {
-        var args = message.content.split(/\s+/);
-        var testo;
-        testo = args.slice(1).join(" ");
-        if (!testo) {
-            return message.channel.send("Inserire un messaggio");
-        }
-        if (message.content.includes("@everyone") || message.content.includes("@here")) {
-            return message.channel.send("Non taggare everyone o here");
-        }
-        message.delete()
-        message.channel.send(testo)
-    }
-})
 
 
  
@@ -437,17 +610,8 @@ client.on("messageCreate", message => {
 
 client.on("messageCreate", message => {
     if (message.content == "m!contact")  {
-if (!message.channel.id == "999463238532087879") {
-   /* Scusa, ma questo comando non è disponibile qui, puoi usarlo solo in questo canale: "<#999463238532087879>" */
-};
-        const embed = new Discord.MessageEmbed()
-            .setTitle(`${utente.user.username} HA TAGGATO LO STAFF}`)
-            .setColor("#0000CD")
-            .setDescription("**hai appena taggato lo staff specifica il problema facendo reply a questo messaggio**")
-            .setFooter("N.B. se il tuo messaggio non sarà coerente con il Mett_bot o il server del precedente ti sarà dato un warn")
-            .setTimestamp()
-            message.channel.send("<@&984697085158903838>")
-        message.channel.send({embeds: [embed]})
+
+            message.channel.send("<@&1003759720684855397>")
     }
 })
 
@@ -459,7 +623,7 @@ client.on("guildMemberAdd", member => {
         .setTimestamp()
         .setDescription(`Ciao ${member.toString()}, benvenuto in ${member.guild.name}. Sei il **${member.guild.memberCount}° Membro**`)
 
-    client.channels.cache.get("984408264903127060").send({embeds: [embed]}); 
+    client.channels.cache.get("1003761259130392657").send({embeds: [embed]}); 
 })
 
 client.on("messageCreate", message => {
@@ -614,37 +778,7 @@ client.on("messageCreate", async message => {
 })
 
 
-client.on("messageCreate", message => {
-    if (message.channel.type == "DM") return
 
-    if (message.member.roles.cache.has("984697085158903838") || message.member.roles.cache.has("984697824287547474"))return
-
-    var parolacce = ["https://", "discrd.gg", "mio server"]
-    var trovata = false;
-    var testo = message.content;
-
-    parolacce.forEach(parola => {
-        if (message.content.toLowerCase().includes(parola.toLowerCase())) {
-            trovata = true;
-            testo = testo.replace(eval(`/${parola}/g`), "###");
-        }
-    })
-
-    if (trovata) {
-        message.delete();
-        var embed = new Discord.MessageEmbed()
-            .setTitle("🔗HAI SPAMMATO")
-            .setColor("#0000CD")
-            .setDescription("hai scritto un messaggio contenente spam")
-            .setAuthor(message.author.toString())
-            .setTimestamp()
-
-
-
-        message.channel.send("<@&984697085158903838>")
-        message.channel.send({ embeds: [embed] })
-    }
-})
 
 const { DisTube } = require("distube")
 
